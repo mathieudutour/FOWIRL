@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FOWIRL - Fog Of War In Real Life</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        min-height: 100%;
+        color: #222222;
+        background-color: #e0e0e0;
+        overflow-x: hidden;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0;
+        position: relative;
+      }
+      header {
+        text-align: center;
+        padding: 40px 0;
+      }
+      h1 {
+        margin: 0 auto;
+        width: fit-content;
+        font-size: 3em;
+        margin-bottom: 10px;
+      }
+      .tagline {
+        margin: 0 auto;
+        width: fit-content;
+        font-size: 1.2em;
+        color: #4a90e2;
+      }
+      .features {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 40px;
+        flex-wrap: wrap;
+      }
+      .feature {
+        text-align: center;
+        max-width: 300px;
+        margin: 20px;
+      }
+      .feature-icon {
+        margin: 0 auto;
+        width: fit-content;
+        font-size: 3em;
+        margin-bottom: 20px;
+      }
+      .cta {
+        text-align: center;
+        margin-top: 60px;
+      }
+      .cta-button {
+        display: inline-block;
+        padding: 15px 30px;
+        font-size: 1.2em;
+        color: #ffffff;
+        background-color: #4a90e2;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+      .cta-button:hover {
+        background-color: #3a7bc8;
+      }
+      .map-preview {
+        width: 100%;
+        max-width: 600px;
+        height: 400px;
+        margin: 40px auto;
+        background-color: #000000;
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+      }
+      .revealed-area {
+        position: absolute;
+        background-color: #1e3a2380;
+        border: 1px solid #2c5a3c;
+      }
+      #area1 {
+        top: 10%;
+        left: 20%;
+        width: 30%;
+        height: 40%;
+      }
+      #area2 {
+        bottom: 15%;
+        right: 25%;
+        width: 35%;
+        height: 30%;
+      }
+      .current-location {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #4a90e2;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .fog-overlay {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+      }
+      .fog-piece {
+        position: absolute;
+        background-image: url("bg.png");
+        background-size: cover;
+        transition: opacity 0.3s ease;
+      }
+      .fog-piece.revealed {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .fog-piece.pre-revealed {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>FOWIRL</h1>
+        <p class="tagline">Fog Of War In Real Life</p>
+      </header>
+
+      <div class="map-preview">
+        <div class="revealed-area" id="area1"></div>
+        <div class="revealed-area" id="area2"></div>
+        <div class="current-location"></div>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🗺️</div>
+          <h2>Explore the World</h2>
+          <p>
+            Uncover new areas as you travel and watch your personal map grow.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🏆</div>
+          <h2>Track Progress</h2>
+          <p>See how much of the world you've discovered and set new goals.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔒</div>
+          <h2>Privacy First</h2>
+          <p>
+            Your data stays on your device. We don't track or store your
+            locations.
+          </p>
+        </div>
+      </div>
+
+      <div class="cta">
+        <a href="#" class="cta-button">Download FOWIRL</a>
+      </div>
+    </div>
+
+    <div class="fog-overlay" id="fogOverlay"></div>
+
+    <script>
+      const fogOverlay = document.getElementById("fogOverlay");
+      const rows = 30;
+      const cols = 30;
+      let revealedAreas = [];
+
+      function createFog() {
+        fogOverlay.innerHTML = "";
+        revealedAreas = [];
+
+        const prerevealed = [
+          "header h1",
+          ".tagline",
+          ".cta a",
+          ".feature-icon",
+          ".feature h2",
+        ];
+        const prerevealedElements = prerevealed
+          .flatMap((selector) => [...document.querySelectorAll(selector)])
+          .map((element) => {
+            return element.getBoundingClientRect();
+          });
+
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            const fogPiece = document.createElement("div");
+            fogPiece.className = "fog-piece";
+            fogPiece.style.top = `${(i * 100) / rows}%`;
+            fogPiece.style.left = `${(j * 100) / cols}%`;
+            fogPiece.style.width = `${100 / cols}%`;
+            fogPiece.style.height = `${100 / rows}%`;
+
+            const fogRect = {
+              top: (i * window.innerHeight) / rows,
+              left: (j * window.innerWidth) / cols,
+              bottom: ((i + 1) * window.innerHeight) / rows,
+              right: ((j + 1) * window.innerWidth) / cols,
+            };
+
+            if (
+              prerevealedElements.some(
+                (element) =>
+                  element.top < fogRect.bottom &&
+                  element.bottom > fogRect.top &&
+                  element.right > fogRect.left &&
+                  element.left < fogRect.right
+              )
+            ) {
+              fogPiece.classList.add("pre-revealed");
+              revealedAreas.push(true);
+            } else {
+              fogPiece.addEventListener("mouseover", () => revealArea(i, j));
+              revealedAreas.push(false);
+            }
+
+            fogOverlay.appendChild(fogPiece);
+          }
+        }
+      }
+
+      function revealArea(row, col) {
+        const index = row * cols + col;
+        if (!revealedAreas[index]) {
+          revealedAreas[index] = true;
+          fogOverlay.children[index].classList.add("revealed");
+        }
+      }
+
+      createFog();
+    </script>
+  </body>
+</html>
