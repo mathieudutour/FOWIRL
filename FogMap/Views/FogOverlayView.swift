@@ -83,9 +83,10 @@ final class FogOverlayRenderer: MKOverlayRenderer {
     context.setBlendMode(.destinationOut)
 
     for location in visitedLocations {
+      guard let latitude = location.latitude, let longitude = location.longitude else { continue }
       let mapPoint = MKMapPoint(CLLocationCoordinate2D(
-        latitude: location.latitude,
-        longitude: location.longitude))
+        latitude: latitude,
+        longitude: longitude))
 
       let point = rect(for: MKMapRect(origin: mapPoint, size: MKMapSize(width: 0, height: 0)))
 

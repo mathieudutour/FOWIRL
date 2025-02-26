@@ -1,4 +1,5 @@
 import SwiftUI
+import BottomSheet
 import MapKit
 import SwiftData
 
@@ -7,10 +8,15 @@ struct ContentView: View {
   @StateObject private var locationManager = LocationManager()
 
   // Fetch all visited locations from SwiftData
-  @Query private var visitedLocations: [VisitedLocation]
+  @Query(filter: Self.predicate()) private var visitedLocations: [VisitedLocation]
 
   // Access SwiftData’s ModelContext for creating new records
   @Environment(\.modelContext) private var context
+
+  @State var bottomSheetPosition: BottomSheetPosition = .relative(0.125)
+
+  // Example coverage percentage
+  @State private var coveragePercentage: Double = 0.0
 
   var body: some View {
     ZStack {
@@ -53,6 +59,14 @@ struct ContentView: View {
 //        }
 //      }
     }
+    .bottomSheet(bottomSheetPosition: self.$bottomSheetPosition, switchablePositions: [
+      .relative(0.125),
+      .relativeTop(0.975)
+    ], title: "Your Stats") {
+      StatsView(
+        visitedLocations: visitedLocations
+      )
+    }
     .onReceive(locationManager.$currentLocation) { newLocation in
       guard let newLocation else { return }
       // Check if we should store a new visited location
@@ -65,18 +79,27 @@ struct ContentView: View {
     // ~55m radius at the equator
     let threshold = 0.0005
 
-    let isAlreadyVisited = visitedLocations.contains { visited in
-      abs(visited.latitude - coordinate.latitude) < threshold &&
-      abs(visited.longitude - coordinate.longitude) < threshold
-    }
-    if !isAlreadyVisited {
+    let alreadyVisited = visitedLocations.first(where: { visited in
+      guard let latitude = visited.latitude, let longitude = visited.longitude else { return false }
+      return abs(latitude - coordinate.latitude) < threshold &&
+      abs(longitude - coordinate.longitude) < threshold
+    })
+    if let alreadyVisited {
+      alreadyVisited.visit()
+    } else {
       let newSpot = VisitedLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-      do {
-        context.insert(newSpot)
-        try context.save()
-      } catch {
-        print("Error saving new visited location: \(error)")
-      }
+      context.insert(newSpot)
+    }
+    do {
+      try context.save()
+    } catch {
+      print("Error saving visited location: \(error)")
+    }
+  }
+
+  static func predicate() -> Predicate<VisitedLocation> {
+    return #Predicate<VisitedLocation> { location in
+      location.latitude != nil && location.longitude != nil
     }
   }
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 
 @main
 struct FogMapApp: App {
@@ -7,7 +8,20 @@ struct FogMapApp: App {
   // This container is used throughout the app to persist data.
   @State private var modelContainer: ModelContainer = {
     do {
-      let container = try ModelContainer(for: VisitedLocation.self)
+      // Create a CloudKit schema configuration
+      let schema = Schema([VisitedLocation.self])
+
+      // Configure for CloudKit sync
+      let modelConfiguration = ModelConfiguration(
+        cloudKitDatabase: .private("iCloud.me.dutour.mathieu.fowirl")
+      )
+
+      // Create container with CloudKit configuration
+      let container = try ModelContainer(
+        for: schema,
+        configurations: [modelConfiguration]
+      )
+
       return container
     } catch {
       fatalError("Failed to create ModelContainer: \(error)")

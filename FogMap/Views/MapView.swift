@@ -21,6 +21,8 @@ struct AppleMapsView: UIViewRepresentable {
     mapView.isRotateEnabled = true
     mapView.isPitchEnabled = false
     mapView.showsUserTrackingButton = true
+    mapView.showsScale = true
+
     mapView.delegate = context.coordinator
 
     let config = MKStandardMapConfiguration(emphasisStyle: .muted)
