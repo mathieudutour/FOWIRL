@@ -39,11 +39,10 @@ class LocationDataManager {
     let maxLon = coordinate.longitude + threshold
 
     let predicate = #Predicate<VisitedLocation> { visited in
-      visited.latitude != nil && visited.longitude != nil &&
-      visited.latitude! >= minLat &&
-      visited.latitude! <= maxLat &&
-      visited.longitude! >= minLon &&
-      visited.longitude! <= maxLon
+      visited.latitude ?? -1000 >= minLat &&
+      visited.latitude ?? 1000 <= maxLat &&
+      visited.longitude ?? -1000.0 >= minLon &&
+      visited.longitude ?? 1000.0 <= maxLon
     }
 
     let descriptor = FetchDescriptor<VisitedLocation>(predicate: predicate)

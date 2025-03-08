@@ -15,6 +15,8 @@ struct FogMapApp: App {
 
       // Configure for CloudKit sync
       let modelConfiguration = ModelConfiguration(
+        schema: schema,
+        isStoredInMemoryOnly: false,
         cloudKitDatabase: .private("iCloud.me.dutour.mathieu.fowirl")
       )
 

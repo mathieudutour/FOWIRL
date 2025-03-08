@@ -91,7 +91,10 @@ struct ContentView: View {
       .presentationDetents([.medium, .large])
       .presentationDragIndicator(.visible)
     }
-    // Add to ContentView
+    .onAppear {
+      // Set the model context in the data manager when the view appears
+      LocationDataManager.shared.setModelContext(context)
+    }
     .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
       // App moving to background
       locationManager.setAccuracyMode(.medium)
