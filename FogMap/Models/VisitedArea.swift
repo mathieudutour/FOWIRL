@@ -8,6 +8,7 @@ final class VisitedLocation {
   var longitude: Double?
   var firstVisited: Date?
   var lastVisited: Date?
+  var visits: Int = 1
 
   init(latitude: Double, longitude: Double) {
     self.latitude = latitude
@@ -17,6 +18,7 @@ final class VisitedLocation {
   }
 
   func visit() {
-    self.lastVisited = Date()
+    visits += 1
+    lastVisited = Date()
   }
 }

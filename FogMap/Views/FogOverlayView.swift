@@ -13,11 +13,25 @@ final class FogOverlay: NSObject, MKOverlay {
 /// The custom renderer draws a semi-transparent black fill everywhere,
 /// subtracting circles where the user has visited.
 final class FogOverlayRenderer: MKOverlayRenderer {
-  /// The visited locations displayed as “holes” in the black overlay.
-  var visitedLocations: [VisitedLocation]
+  /// Thread-safe copy of location data
+  private struct LocationData {
+    let latitude: Double
+    let longitude: Double
+
+    init(from location: VisitedLocation) {
+      self.latitude = location.latitude ?? 0
+      self.longitude = location.longitude ?? 0
+    }
+  }
+
+  /// Thread-safe copy of the visited locations  displayed as “holes” in the black overlay.
+  private var visitedLocations: [LocationData]
 
   init(overlay: MKOverlay, visitedLocations: [VisitedLocation]) {
-    self.visitedLocations = visitedLocations
+    self.visitedLocations = visitedLocations.compactMap { location in
+      guard location.latitude != nil, location.longitude != nil else { return nil }
+      return LocationData(from: location)
+    }
     super.init(overlay: overlay)
   }
 
@@ -83,10 +97,9 @@ final class FogOverlayRenderer: MKOverlayRenderer {
     context.setBlendMode(.destinationOut)
 
     for location in visitedLocations {
-      guard let latitude = location.latitude, let longitude = location.longitude else { continue }
       let mapPoint = MKMapPoint(CLLocationCoordinate2D(
-        latitude: latitude,
-        longitude: longitude))
+        latitude: location.latitude,
+        longitude: location.longitude))
 
       let point = rect(for: MKMapRect(origin: mapPoint, size: MKMapSize(width: 0, height: 0)))
 

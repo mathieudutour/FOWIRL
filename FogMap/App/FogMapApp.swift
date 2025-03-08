@@ -4,6 +4,8 @@ import CloudKit
 
 @main
 struct FogMapApp: App {
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
   // SwiftData ModelContainer to store VisitedLocation.
   // This container is used throughout the app to persist data.
   @State private var modelContainer: ModelContainer = {

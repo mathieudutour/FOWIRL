@@ -5,6 +5,9 @@ struct AppleMapsView: UIViewRepresentable {
   /// Whether we're in debug mode (tapping the map manually adds visited locations)
   var debugMode: Bool
 
+  /// The current map mode (fog of war or heat map)
+  var mapMode: MapMode
+
   /// Closure called whenever the user taps the map (if debugMode == true)
   var onMapTap: (CLLocationCoordinate2D) -> Void
 
@@ -12,7 +15,7 @@ struct AppleMapsView: UIViewRepresentable {
   var visitedLocations: [VisitedLocation]
 
   func makeCoordinator() -> Coordinator {
-    Coordinator(self, debugMode: debugMode, onMapTap: onMapTap)
+    Coordinator(self)
   }
 
   func makeUIView(context: Context) -> MKMapView {
@@ -30,12 +33,8 @@ struct AppleMapsView: UIViewRepresentable {
     mapView.preferredConfiguration = config
     mapView.userTrackingMode = .follow
 
-    // Set the region initially
-//    mapView.setRegion(initialRegion, animated: false)
-
-    // Add the custom fog overlay
-    let fogOverlay = FogOverlay()
-    mapView.addOverlay(fogOverlay, level: .aboveLabels)
+    // Add the appropriate overlay based on the current mode
+    addOverlay(to: mapView, mode: mapMode)
 
     // Add a tap gesture
     let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleMapTap(_:)))
@@ -48,29 +47,43 @@ struct AppleMapsView: UIViewRepresentable {
     // Update the visitedLocations in our coordinator so the overlay renderer can use them
     context.coordinator.visitedLocations = visitedLocations
     context.coordinator.debugMode = debugMode
+    context.coordinator.mapMode = mapMode
 
-    // Refresh the overlay so it includes new visited locations
-    if let oldFog = uiView.overlays.first(where: { $0 is FogOverlay }) {
-      uiView.removeOverlay(oldFog)
+    // Remove existing overlays
+    uiView.removeOverlays(uiView.overlays)
+
+    // Add the appropriate overlay based on the current mode
+    addOverlay(to: uiView, mode: mapMode)
+  }
+
+  private func addOverlay(to mapView: MKMapView, mode: MapMode) {
+    switch mode {
+    case .fogOfWar:
+      mapView.addOverlay(FogOverlay(), level: .aboveLabels)
+    case .heatMap:
+      mapView.addOverlay(HeatMapOverlay(), level: .aboveLabels)
     }
-    uiView.addOverlay(FogOverlay())
   }
 
   class Coordinator: NSObject, MKMapViewDelegate {
     var parent: AppleMapsView
     var visitedLocations: [VisitedLocation] = []
     var debugMode: Bool
+    var mapMode: MapMode = .fogOfWar
     let onMapTap: (CLLocationCoordinate2D) -> Void
 
-    init(_ parent: AppleMapsView, debugMode: Bool, onMapTap: @escaping (CLLocationCoordinate2D) -> Void) {
+    init(_ parent: AppleMapsView) {
       self.parent = parent
-      self.debugMode = debugMode
-      self.onMapTap = onMapTap
+      self.debugMode = parent.debugMode
+      self.onMapTap = parent.onMapTap
+      self.mapMode = parent.mapMode
     }
 
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
       if let fogOverlay = overlay as? FogOverlay {
         return FogOverlayRenderer(overlay: fogOverlay, visitedLocations: visitedLocations)
+      } else if let heatMapOverlay = overlay as? HeatMapOverlay {
+        return HeatMapOverlayRenderer(overlay: heatMapOverlay, visitedLocations: visitedLocations)
       }
       return MKOverlayRenderer(overlay: overlay)
     }
