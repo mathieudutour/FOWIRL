@@ -55,7 +55,7 @@ final class FogOverlayRenderer: MKOverlayRenderer {
 
     // 2) Fill the entire bounding rect with black (optional), or start with white
     let entireRect = rect(for: overlay.boundingMapRect)
-    context.setFillColor(UIColor.black.cgColor)
+    context.setFillColor(UIColor.systemBackground.cgColor)
     context.fill(entireRect)
 
     // 3) Create a pattern from the noise tile
